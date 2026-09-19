@@ -1,19 +1,35 @@
-
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(Collider2D))]
 public class PaddleMovement : MonoBehaviour
 {
-    public float speed = 5f;
+    [Header("Movimentação")]
+    [SerializeField] private float speed = 5f;
 
-    public bool isPlayer1;
+    [Header("Jogador")]
+    [SerializeField] private bool isPlayer1;
 
-    public float minY = -4f;
-    public float maxY = 4f;
+    [Header("Limites")]
+    [SerializeField] private float minY = -4f;
+    [SerializeField] private float maxY = 4f;
 
-    void Update()
+    private Rigidbody2D rb;
+    private float movement;
+
+    private void Awake()
     {
-        float movement = 0f;
+        rb = GetComponent<Rigidbody2D>();
+
+        rb.bodyType = RigidbodyType2D.Kinematic;
+        rb.gravityScale = 0f;
+        rb.freezeRotation = true;
+    }
+
+    private void Update()
+    {
+        movement = 0f;
 
         if (Keyboard.current == null)
             return;
@@ -34,15 +50,16 @@ public class PaddleMovement : MonoBehaviour
             if (Keyboard.current.downArrowKey.isPressed)
                 movement = -1f;
         }
+    }
 
-        Vector3 position = transform.position;
+    private void FixedUpdate()
+    {
+        Vector2 position = rb.position;
 
-        position.y += movement * speed * Time.deltaTime;
+        position.y += movement * speed * Time.fixedDeltaTime;
 
         position.y = Mathf.Clamp(position.y, minY, maxY);
 
-        transform.position = position;
+        rb.MovePosition(position);
     }
 }
-
-

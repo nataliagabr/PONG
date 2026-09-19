@@ -1075,7 +1075,6 @@ GameObject:
   - component: {fileID: 864190292}
   - component: {fileID: 864190294}
   - component: {fileID: 864190293}
-  - component: {fileID: 864190295}
   m_Layer: 0
   m_Name: Player2
   m_TagString: Player
@@ -1246,22 +1245,6 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
---- !u!114 &864190295
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 864190288}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b2b5fff4b620b1a488b2e01bc0814e12, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PaddleMovement
-  speed: 5
-  isPlayer1: 0
-  minY: -4
-  maxY: 4
 --- !u!1 &936010052
 GameObject:
   m_ObjectHideFlags: 0
