@@ -130,9 +130,10 @@ GameObject:
   - component: {fileID: 175197415}
   - component: {fileID: 175197414}
   - component: {fileID: 175197416}
+  - component: {fileID: 175197417}
   m_Layer: 0
   m_Name: Player1
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -257,6 +258,22 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
+--- !u!114 &175197417
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 175197413}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2b5fff4b620b1a488b2e01bc0814e12, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PaddleMovement
+  speed: 5
+  isPlayer1: 1
+  minY: -4
+  maxY: 4
 --- !u!1 &463518097
 GameObject:
   m_ObjectHideFlags: 0
@@ -269,6 +286,7 @@ GameObject:
   - component: {fileID: 463518100}
   - component: {fileID: 463518099}
   - component: {fileID: 463518098}
+  - component: {fileID: 463518102}
   m_Layer: 0
   m_Name: Ball
   m_TagString: Untagged
@@ -301,7 +319,7 @@ Rigidbody2D:
     m_Bits: 0
   m_Interpolate: 0
   m_SleepingMode: 1
-  m_CollisionDetection: 0
+  m_CollisionDetection: 1
   m_Constraints: 0
 --- !u!58 &463518099
 CircleCollider2D:
@@ -413,6 +431,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &463518102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 463518097}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff930c7dfbd460c48a746391701be365, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BallMovement
+  speed: 5
 --- !u!1 &509535944
 GameObject:
   m_ObjectHideFlags: 0
@@ -783,9 +814,10 @@ GameObject:
   - component: {fileID: 864190291}
   - component: {fileID: 864190290}
   - component: {fileID: 864190289}
+  - component: {fileID: 864190292}
   m_Layer: 0
   m_Name: Player2
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -885,6 +917,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &864190292
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 864190288}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2b5fff4b620b1a488b2e01bc0814e12, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PaddleMovement
+  speed: 5
+  isPlayer1: 0
+  minY: -4
+  maxY: 4
 --- !u!1 &947947123
 GameObject:
   m_ObjectHideFlags: 0
