@@ -23,6 +23,9 @@ public class GameManager : MonoBehaviour
     [Header("Reinício")]
     [SerializeField] private float restartDelay = 1f;
 
+    [Header("Rede")]
+    [SerializeField] private UDPClient udpClient;
+
     private int scoreP1 = 0;
     private int scoreP2 = 0;
 
@@ -66,6 +69,8 @@ public class GameManager : MonoBehaviour
 
         AtualizarPlacar();
 
+        EnviarPontuacao();
+
         if (scoreP1 >= pontosParaVencer)
         {
             FinalizarPartida("Jogador 1 venceu!");
@@ -83,6 +88,8 @@ public class GameManager : MonoBehaviour
         scoreP2++;
 
         AtualizarPlacar();
+
+        EnviarPontuacao();
 
         if (scoreP2 >= pontosParaVencer)
         {
@@ -106,6 +113,36 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void EnviarPontuacao()
+    {
+        if (udpClient == null)
+            return;
+
+        udpClient.EnviarPontuacao(
+            scoreP1,
+            scoreP2
+        );
+    }
+
+    public void SincronizarPontuacao(
+        int novoScoreP1,
+        int novoScoreP2)
+    {
+        scoreP1 = novoScoreP1;
+        scoreP2 = novoScoreP2;
+
+        AtualizarPlacar();
+
+        if (scoreP1 >= pontosParaVencer)
+        {
+            FinalizarPartida("Jogador 1 venceu!");
+        }
+        else if (scoreP2 >= pontosParaVencer)
+        {
+            FinalizarPartida("Jogador 2 venceu!");
+        }
+    }
+
     private void ReiniciarBola()
     {
         if (ball == null)
@@ -120,7 +157,11 @@ public class GameManager : MonoBehaviour
         }
 
         CancelInvoke(nameof(LiberarBola));
-        Invoke(nameof(LiberarBola), restartDelay);
+
+        Invoke(
+            nameof(LiberarBola),
+            restartDelay
+        );
     }
 
     private void LiberarBola()
@@ -131,18 +172,24 @@ public class GameManager : MonoBehaviour
         if (ballRb == null)
             return;
 
-        float direcaoX = Random.value < 0.5f ? -1f : 1f;
-        float direcaoY = Random.Range(-0.5f, 0.5f);
+        float direcaoX =
+            Random.value < 0.5f ? -1f : 1f;
 
-        Vector2 direcao = new Vector2(
-            direcaoX,
-            direcaoY
-        ).normalized;
+        float direcaoY =
+            Random.Range(-0.5f, 0.5f);
 
-        ballRb.linearVelocity = direcao * 5f;
+        Vector2 direcao =
+            new Vector2(
+                direcaoX,
+                direcaoY
+            ).normalized;
+
+        ballRb.linearVelocity =
+            direcao * 5f;
     }
 
-    private void FinalizarPartida(string mensagem)
+    private void FinalizarPartida(
+        string mensagem)
     {
         partidaEncerrada = true;
 
@@ -150,7 +197,9 @@ public class GameManager : MonoBehaviour
 
         if (ballRb != null)
         {
-            ballRb.linearVelocity = Vector2.zero;
+            ballRb.linearVelocity =
+                Vector2.zero;
+
             ballRb.angularVelocity = 0f;
         }
 
@@ -176,6 +225,8 @@ public class GameManager : MonoBehaviour
 
         AtualizarPlacar();
 
+        EnviarPontuacao();
+
         if (winPanel != null)
         {
             winPanel.SetActive(false);
@@ -183,15 +234,36 @@ public class GameManager : MonoBehaviour
 
         if (ball != null)
         {
-            ball.position = ballStartPosition;
+            ball.position =
+                ballStartPosition;
         }
 
         if (ballRb != null)
         {
-            ballRb.linearVelocity = Vector2.zero;
+            ballRb.linearVelocity =
+                Vector2.zero;
+
             ballRb.angularVelocity = 0f;
         }
 
-        Invoke(nameof(LiberarBola), restartDelay);
+        Invoke(
+            nameof(LiberarBola),
+            restartDelay
+        );
+    }
+
+    public int GetScoreP1()
+    {
+        return scoreP1;
+    }
+
+    public int GetScoreP2()
+    {
+        return scoreP2;
+    }
+
+    public bool PartidaEncerrada()
+    {
+        return partidaEncerrada;
     }
 }

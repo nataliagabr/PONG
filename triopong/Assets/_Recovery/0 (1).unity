@@ -925,52 +925,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Goal
   goal: 0
---- !u!1 &632991544
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 632991546}
-  - component: {fileID: 632991545}
-  m_Layer: 0
-  m_Name: server
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &632991545
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 632991544}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7eb219a46808915489d930d3f1aab80c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UDPServer
-  executarServidor: 0
-  porta: 7777
---- !u!4 &632991546
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 632991544}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 12.7312, y: 4.45954, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &657963783
 GameObject:
   m_ObjectHideFlags: 0
@@ -1345,7 +1299,6 @@ MonoBehaviour:
   winPanel: {fileID: 1170125563}
   winText: {fileID: 2105971867}
   restartDelay: 1
-  udpClient: {fileID: 1872926989}
 --- !u!4 &936010054
 Transform:
   m_ObjectHideFlags: 0
@@ -2152,56 +2105,6 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
---- !u!1 &1872926988
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1872926990}
-  - component: {fileID: 1872926989}
-  m_Layer: 0
-  m_Name: client
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1872926989
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1872926988}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8f3e724ddc0e2cc4392a9572317c8453, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UDPClient
-  ipServidor: 127.0.0.1
-  porta: 7777
-  minhaRaquete: {fileID: 175197415}
-  raqueteAdversaria: {fileID: 864190291}
-  bola: {fileID: 463518101}
-  bolaRb: {fileID: 463518098}
---- !u!4 &1872926990
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1872926988}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 12.7312, y: 4.45954, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1961442342
 GameObject:
   m_ObjectHideFlags: 0
@@ -2493,5 +2396,3 @@ SceneRoots:
   - {fileID: 627762763}
   - {fileID: 1104047991}
   - {fileID: 936010054}
-  - {fileID: 632991546}
-  - {fileID: 1872926990}
