@@ -9,21 +9,35 @@ public class PaddleMovement : MonoBehaviour
     [SerializeField] private float speed = 5f;
 
     [Header("Jogador")]
-    [SerializeField] private bool isPlayer1;
+    [SerializeField] private int playerID = 1;
 
     [Header("Limites")]
     [SerializeField] private float minY = -4f;
     [SerializeField] private float maxY = 4f;
 
+    [Header("Rede")]
+    [SerializeField] private UDPClient udpClient;
+
     private Rigidbody2D rb;
+
     private float movement;
 
     private void Awake()
     {
-        rb = GetComponent<Rigidbody2D>();
+        rb =
+            GetComponent<Rigidbody2D>();
 
-        rb.bodyType = RigidbodyType2D.Kinematic;
+        if (udpClient == null)
+        {
+            udpClient =
+                FindFirstObjectByType<UDPClient>();
+        }
+
+        rb.bodyType =
+            RigidbodyType2D.Kinematic;
+
         rb.gravityScale = 0f;
+
         rb.freezeRotation = true;
     }
 
@@ -31,34 +45,78 @@ public class PaddleMovement : MonoBehaviour
     {
         movement = 0f;
 
+        if (udpClient == null)
+            return;
+
+        // =====================================================
+        // SOMENTE O DONO DESTA RAQUETE PODE CONTROLÁ-LA
+        // =====================================================
+
+        if (udpClient.GetPlayerID() != playerID)
+            return;
+
         if (Keyboard.current == null)
             return;
 
-        if (isPlayer1)
+        // =====================================================
+        // PLAYER 1
+        // =====================================================
+
+        if (playerID == 1)
         {
             if (Keyboard.current.wKey.isPressed)
+            {
                 movement = 1f;
+            }
 
             if (Keyboard.current.sKey.isPressed)
+            {
                 movement = -1f;
+            }
         }
-        else
+
+        // =====================================================
+        // PLAYER 2
+        // =====================================================
+
+        else if (playerID == 2)
         {
             if (Keyboard.current.upArrowKey.isPressed)
+            {
                 movement = 1f;
+            }
 
             if (Keyboard.current.downArrowKey.isPressed)
+            {
                 movement = -1f;
+            }
         }
     }
 
     private void FixedUpdate()
     {
-        Vector2 position = rb.position;
+        if (udpClient == null)
+            return;
 
-        position.y += movement * speed * Time.fixedDeltaTime;
+        // Só movimenta se esta raquete
+        // pertencer ao jogador local.
+        if (udpClient.GetPlayerID() != playerID)
+            return;
 
-        position.y = Mathf.Clamp(position.y, minY, maxY);
+        Vector2 position =
+            rb.position;
+
+        position.y +=
+            movement *
+            speed *
+            Time.fixedDeltaTime;
+
+        position.y =
+            Mathf.Clamp(
+                position.y,
+                minY,
+                maxY
+            );
 
         rb.MovePosition(position);
     }

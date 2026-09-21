@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -8,9 +9,7 @@ using UnityEngine;
 public class UDPClient : MonoBehaviour
 {
     [Header("Conexão")]
-    [SerializeField] private string ipServidor =
-        "127.0.0.1";
-
+    [SerializeField] private string ipServidor = "127.0.0.1";
     [SerializeField] private int porta = 7777;
 
     [Header("Raquete Local")]
@@ -21,29 +20,31 @@ public class UDPClient : MonoBehaviour
 
     [Header("Bola")]
     [SerializeField] private Transform bola;
-
     [SerializeField] private Rigidbody2D bolaRb;
 
     private UdpClient cliente;
-
     private IPEndPoint enderecoServidor;
 
     private int playerID = 0;
 
     private bool conectado = false;
-
     private bool encerrando = false;
+    private bool partidaPronta = false;
 
-    private readonly Queue<string>
-        mensagensRecebidas =
+    private readonly Queue<string> mensagensRecebidas =
         new Queue<string>();
 
     private readonly object lockMensagens =
         new object();
 
-    // =========================================================
-    // INICIALIZAÇÃO
-    // =========================================================
+    private float tempoEnvioPosicao = 0f;
+    private float intervaloEnvioPosicao = 0.033f;
+
+    private float tempoEnvioBola = 0f;
+    private float intervaloEnvioBola = 0.033f;
+
+    private Vector2 ultimaPosicaoBola;
+    private Vector2 ultimaVelocidadeBola;
 
     private void Start()
     {
@@ -57,24 +58,45 @@ public class UDPClient : MonoBehaviour
         if (!conectado || encerrando)
             return;
 
-        // Envia posição da própria raquete
+        if (playerID == 0)
+            return;
+
+        // -----------------------------------------------------
+        // POSIÇÃO DA PRÓPRIA RAQUETE
+        // -----------------------------------------------------
+
         if (minhaRaquete != null)
         {
-            EnviarPosicaoRaquete();
+            tempoEnvioPosicao += Time.deltaTime;
+
+            if (tempoEnvioPosicao >= intervaloEnvioPosicao)
+            {
+                tempoEnvioPosicao = 0f;
+
+                EnviarPosicaoRaquete();
+            }
         }
 
-        // Player 1 é autoridade da bola
+        // -----------------------------------------------------
+        // BOLA
+        // -----------------------------------------------------
+
+        // Player 1 é autoridade da bola.
         if (playerID == 1 &&
+            partidaPronta &&
             bola != null &&
             bolaRb != null)
         {
-            EnviarEstadoBola();
+            tempoEnvioBola += Time.deltaTime;
+
+            if (tempoEnvioBola >= intervaloEnvioBola)
+            {
+                tempoEnvioBola = 0f;
+
+                EnviarEstadoBola();
+            }
         }
     }
-
-    // =========================================================
-    // CONECTAR
-    // =========================================================
 
     private void Conectar()
     {
@@ -82,9 +104,7 @@ public class UDPClient : MonoBehaviour
         {
             enderecoServidor =
                 new IPEndPoint(
-                    IPAddress.Parse(
-                        ipServidor
-                    ),
+                    IPAddress.Parse(ipServidor),
                     porta
                 );
 
@@ -96,22 +116,26 @@ public class UDPClient : MonoBehaviour
             );
 
             conectado = true;
-
             encerrando = false;
 
             Debug.Log(
-                "Cliente UDP conectado ao servidor."
+                "Cliente UDP conectado ao servidor " +
+                ipServidor +
+                ":" +
+                porta
             );
-
-            EnviarMensagem("HELLO");
 
             cliente.BeginReceive(
                 ReceberMensagem,
                 null
             );
+
+            EnviarMensagem("HELLO");
         }
         catch (Exception erro)
         {
+            conectado = false;
+
             Debug.LogError(
                 "Erro ao conectar ao servidor: " +
                 erro.Message
@@ -119,30 +143,29 @@ public class UDPClient : MonoBehaviour
         }
     }
 
-    // =========================================================
-    // ENVIAR POSIÇÃO DA RAQUETE
-    // =========================================================
-
     private void EnviarPosicaoRaquete()
     {
+        if (minhaRaquete == null)
+            return;
+
         float posicaoY =
             minhaRaquete.position.y;
 
         string mensagem =
             "POS:" +
-            posicaoY.ToString("F2");
+            posicaoY.ToString(
+                "F3",
+                CultureInfo.InvariantCulture
+            );
 
-        EnviarMensagem(
-            mensagem
-        );
+        EnviarMensagem(mensagem);
     }
-
-    // =========================================================
-    // ENVIAR ESTADO DA BOLA
-    // =========================================================
 
     private void EnviarEstadoBola()
     {
+        if (bola == null || bolaRb == null)
+            return;
+
         Vector2 posicao =
             bola.position;
 
@@ -151,22 +174,28 @@ public class UDPClient : MonoBehaviour
 
         string mensagem =
             "BALL:" +
-            posicao.x.ToString("F3") +
+            posicao.x.ToString(
+                "F3",
+                CultureInfo.InvariantCulture
+            ) +
             ":" +
-            posicao.y.ToString("F3") +
+            posicao.y.ToString(
+                "F3",
+                CultureInfo.InvariantCulture
+            ) +
             ":" +
-            velocidade.x.ToString("F3") +
+            velocidade.x.ToString(
+                "F3",
+                CultureInfo.InvariantCulture
+            ) +
             ":" +
-            velocidade.y.ToString("F3");
+            velocidade.y.ToString(
+                "F3",
+                CultureInfo.InvariantCulture
+            );
 
-        EnviarMensagem(
-            mensagem
-        );
+        EnviarMensagem(mensagem);
     }
-
-    // =========================================================
-    // ENVIAR PONTUAÇÃO
-    // =========================================================
 
     public void EnviarPontuacao(
         int scoreP1,
@@ -178,8 +207,6 @@ public class UDPClient : MonoBehaviour
             return;
         }
 
-        // Somente Player 1 envia
-        // a pontuação oficial
         if (playerID != 1)
             return;
 
@@ -189,9 +216,7 @@ public class UDPClient : MonoBehaviour
             ":" +
             scoreP2;
 
-        EnviarMensagem(
-            mensagem
-        );
+        EnviarMensagem(mensagem);
 
         Debug.Log(
             "Pontuação enviada: P1 " +
@@ -201,9 +226,19 @@ public class UDPClient : MonoBehaviour
         );
     }
 
-    // =========================================================
-    // ENVIAR MENSAGEM
-    // =========================================================
+    public void EnviarReinicio()
+    {
+        if (!conectado ||
+            encerrando)
+        {
+            return;
+        }
+
+        if (playerID != 1)
+            return;
+
+        EnviarMensagem("RESTART");
+    }
 
     private void EnviarMensagem(
         string mensagem)
@@ -249,10 +284,6 @@ public class UDPClient : MonoBehaviour
             }
         }
     }
-
-    // =========================================================
-    // RECEBER MENSAGEM
-    // =========================================================
 
     private void ReceberMensagem(
         IAsyncResult resultado)
@@ -321,10 +352,6 @@ public class UDPClient : MonoBehaviour
         }
     }
 
-    // =========================================================
-    // FILA DE MENSAGENS
-    // =========================================================
-
     private void ProcessarMensagensRecebidas()
     {
         while (true)
@@ -333,46 +360,45 @@ public class UDPClient : MonoBehaviour
 
             lock (lockMensagens)
             {
-                if (mensagensRecebidas.Count > 0)
-                {
-                    mensagem =
-                        mensagensRecebidas.Dequeue();
-                }
+                if (mensagensRecebidas.Count == 0)
+                    break;
+
+                mensagem =
+                    mensagensRecebidas.Dequeue();
             }
 
-            if (mensagem == null)
-                break;
-
-            ProcessarMensagem(
-                mensagem
-            );
+            if (!string.IsNullOrEmpty(mensagem))
+            {
+                ProcessarMensagem(mensagem);
+            }
         }
     }
-
-    // =========================================================
-    // PROCESSAR MENSAGEM
-    // =========================================================
 
     private void ProcessarMensagem(
         string mensagem)
     {
+        Debug.Log(
+            "Mensagem recebida: " +
+            mensagem
+        );
+
         // -----------------------------------------------------
         // ID DO JOGADOR
         // -----------------------------------------------------
 
         if (mensagem.StartsWith("ID:"))
         {
-            string textoID =
+            string valor =
                 mensagem.Substring(3);
 
             if (int.TryParse(
-                textoID,
+                valor,
                 out int novoID))
             {
                 playerID = novoID;
 
                 Debug.Log(
-                    "Meu ID: Player " +
+                    "Meu Player ID é: " +
                     playerID
                 );
             }
@@ -381,28 +407,95 @@ public class UDPClient : MonoBehaviour
         }
 
         // -----------------------------------------------------
-        // SERVIDOR CHEIO
+        // PARTIDA PRONTA
         // -----------------------------------------------------
 
-        if (mensagem == "FULL")
+        if (mensagem == "READY")
         {
-            Debug.LogWarning(
-                "O servidor está cheio."
+            partidaPronta = true;
+
+            Debug.Log(
+                "Os dois jogadores estão conectados!"
             );
 
             return;
         }
 
         // -----------------------------------------------------
+        // PARTIDA CHEIA
+        // -----------------------------------------------------
+
+        if (mensagem == "FULL")
+        {
+            conectado = false;
+
+            Debug.LogError(
+                "Servidor está cheio."
+            );
+
+            return;
+        }
+
+        // -----------------------------------------------------
+        // MENSAGENS DE OUTRO JOGADOR
+        // -----------------------------------------------------
+
+        if (mensagem.StartsWith("P1:"))
+        {
+            ProcessarMensagemDoJogador(
+                1,
+                mensagem.Substring(3)
+            );
+
+            return;
+        }
+
+        if (mensagem.StartsWith("P2:"))
+        {
+            ProcessarMensagemDoJogador(
+                2,
+                mensagem.Substring(3)
+            );
+
+            return;
+        }
+    }
+
+    private void ProcessarMensagemDoJogador(
+        int jogador,
+        string mensagem)
+    {
+        // -----------------------------------------------------
         // POSIÇÃO DA RAQUETE
         // -----------------------------------------------------
 
-        if (mensagem.StartsWith("P1:POS:") ||
-            mensagem.StartsWith("P2:POS:"))
+        if (mensagem.StartsWith("POS:"))
         {
-            ProcessarPosicaoAdversaria(
-                mensagem
-            );
+            // Se a mensagem é da própria máquina,
+            // não precisamos aplicá-la novamente.
+            if (jogador == playerID)
+                return;
+
+            string valor =
+                mensagem.Substring(4);
+
+            if (float.TryParse(
+                valor,
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out float posicaoY))
+            {
+                if (raqueteAdversaria != null)
+                {
+                    Vector3 posicao =
+                        raqueteAdversaria.position;
+
+                    posicao.y = posicaoY;
+
+                    raqueteAdversaria.position =
+                        posicao;
+                }
+            }
 
             return;
         }
@@ -411,197 +504,152 @@ public class UDPClient : MonoBehaviour
         // BOLA
         // -----------------------------------------------------
 
-        if (mensagem.StartsWith("P1:BALL:"))
+        if (mensagem.StartsWith("BALL:"))
         {
-            ProcessarEstadoBola(
-                mensagem
-            );
+            // Apenas Player 2 recebe a bola
+            // enviada pelo Player 1.
+            if (playerID != 2)
+                return;
+
+            string dados =
+                mensagem.Substring(5);
+
+            string[] partes =
+                dados.Split(':');
+
+            if (partes.Length < 4)
+                return;
+
+            bool sucessoX =
+                float.TryParse(
+                    partes[0],
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out float x
+                );
+
+            bool sucessoY =
+                float.TryParse(
+                    partes[1],
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out float y
+                );
+
+            bool sucessoVX =
+                float.TryParse(
+                    partes[2],
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out float vx
+                );
+
+            bool sucessoVY =
+                float.TryParse(
+                    partes[3],
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out float vy
+                );
+
+            if (!sucessoX ||
+                !sucessoY ||
+                !sucessoVX ||
+                !sucessoVY)
+            {
+                return;
+            }
+
+            ultimaPosicaoBola =
+                new Vector2(x, y);
+
+            ultimaVelocidadeBola =
+                new Vector2(vx, vy);
+
+            if (bola != null)
+            {
+                Vector3 posicao =
+                    bola.position;
+
+                posicao.x = x;
+                posicao.y = y;
+
+                bola.position =
+                    posicao;
+            }
+
+            if (bolaRb != null)
+            {
+                bolaRb.linearVelocity =
+                    ultimaVelocidadeBola;
+            }
 
             return;
         }
 
         // -----------------------------------------------------
-        // PONTUAÇÃO
+        // SCORE
         // -----------------------------------------------------
 
-        if (mensagem.StartsWith("P1:SCORE:") ||
-            mensagem.StartsWith("P2:SCORE:"))
+        if (mensagem.StartsWith("SCORE:"))
         {
-            ProcessarPontuacao(
-                mensagem
-            );
+            string dados =
+                mensagem.Substring(6);
+
+            string[] partes =
+                dados.Split(':');
+
+            if (partes.Length < 2)
+                return;
+
+            if (!int.TryParse(
+                partes[0],
+                out int scoreP1))
+            {
+                return;
+            }
+
+            if (!int.TryParse(
+                partes[1],
+                out int scoreP2))
+            {
+                return;
+            }
+
+            GameManager gameManager =
+                GameManager.Instance;
+
+            if (gameManager != null)
+            {
+                gameManager.SincronizarPontuacao(
+                    scoreP1,
+                    scoreP2
+                );
+            }
+
+            return;
+        }
+
+        // -----------------------------------------------------
+        // REINICIAR
+        // -----------------------------------------------------
+
+        if (mensagem == "RESTART")
+        {
+            if (playerID == 2)
+            {
+                GameManager gameManager =
+                    GameManager.Instance;
+
+                if (gameManager != null)
+                {
+                    gameManager.ReiniciarPartidaRemota();
+                }
+            }
 
             return;
         }
     }
-
-    // =========================================================
-    // PROCESSAR POSIÇÃO DA RAQUETE ADVERSÁRIA
-    // =========================================================
-
-    private void ProcessarPosicaoAdversaria(
-        string mensagem)
-    {
-        string[] partes =
-            mensagem.Split(':');
-
-        if (partes.Length < 3)
-            return;
-
-        if (!float.TryParse(
-            partes[2],
-            out float posicaoY))
-        {
-            return;
-        }
-
-        int jogadorMensagem;
-
-        if (partes[0] == "P1")
-        {
-            jogadorMensagem = 1;
-        }
-        else
-        {
-            jogadorMensagem = 2;
-        }
-
-        // Não mexer na própria raquete
-        if (jogadorMensagem == playerID)
-            return;
-
-        if (raqueteAdversaria == null)
-            return;
-
-        Vector3 posicao =
-            raqueteAdversaria.position;
-
-        posicao.y = posicaoY;
-
-        raqueteAdversaria.position =
-            posicao;
-    }
-
-    // =========================================================
-    // PROCESSAR ESTADO DA BOLA
-    // =========================================================
-
-    private void ProcessarEstadoBola(
-        string mensagem)
-    {
-        string[] partes =
-            mensagem.Split(':');
-
-        if (partes.Length < 6)
-            return;
-
-        if (!float.TryParse(
-            partes[2],
-            out float x))
-        {
-            return;
-        }
-
-        if (!float.TryParse(
-            partes[3],
-            out float y))
-        {
-            return;
-        }
-
-        if (!float.TryParse(
-            partes[4],
-            out float velocidadeX))
-        {
-            return;
-        }
-
-        if (!float.TryParse(
-            partes[5],
-            out float velocidadeY))
-        {
-            return;
-        }
-
-        // Player 1 não precisa
-        // receber sua própria bola
-        if (playerID == 1)
-            return;
-
-        if (bola == null ||
-            bolaRb == null)
-        {
-            return;
-        }
-
-        bola.position =
-            new Vector3(
-                x,
-                y,
-                bola.position.z
-            );
-
-        bolaRb.linearVelocity =
-            new Vector2(
-                velocidadeX,
-                velocidadeY
-            );
-    }
-
-    // =========================================================
-    // PROCESSAR PONTUAÇÃO
-    // =========================================================
-
-    private void ProcessarPontuacao(
-        string mensagem)
-    {
-        string[] partes =
-            mensagem.Split(':');
-
-        if (partes.Length < 4)
-            return;
-
-        // Exemplo:
-        // P1:SCORE:2:1
-
-        if (!int.TryParse(
-            partes[2],
-            out int novoScoreP1))
-        {
-            return;
-        }
-
-        if (!int.TryParse(
-            partes[3],
-            out int novoScoreP2))
-        {
-            return;
-        }
-
-        // Player 1 não precisa
-        // receber a própria pontuação
-        if (playerID == 1)
-            return;
-
-        if (GameManager.Instance == null)
-            return;
-
-        GameManager.Instance.SincronizarPontuacao(
-            novoScoreP1,
-            novoScoreP2
-        );
-
-        Debug.Log(
-            "Pontuação recebida: P1 " +
-            novoScoreP1 +
-            " x P2 " +
-            novoScoreP2
-        );
-    }
-
-    // =========================================================
-    // GETTERS
-    // =========================================================
 
     public int GetPlayerID()
     {
@@ -613,9 +661,10 @@ public class UDPClient : MonoBehaviour
         return conectado;
     }
 
-    // =========================================================
-    // ENCERRAR CLIENTE
-    // =========================================================
+    public bool PartidaPronta()
+    {
+        return partidaPronta;
+    }
 
     private void OnDestroy()
     {
@@ -629,18 +678,17 @@ public class UDPClient : MonoBehaviour
 
     private void FecharCliente()
     {
-        if (encerrando)
-            return;
-
         encerrando = true;
-
         conectado = false;
 
         if (cliente != null)
         {
             cliente.Close();
-
             cliente = null;
+
+            Debug.Log(
+                "Cliente UDP encerrado."
+            );
         }
     }
 }

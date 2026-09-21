@@ -15,9 +15,13 @@ public class BallMovement : MonoBehaviour
 
     private Rigidbody2D rb;
 
+    private UDPClient udpClient;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+
+        udpClient = FindFirstObjectByType<UDPClient>();
 
         rb.bodyType = RigidbodyType2D.Dynamic;
         rb.gravityScale = 0f;
@@ -25,118 +29,157 @@ public class BallMovement : MonoBehaviour
         rb.angularDamping = 0f;
         rb.freezeRotation = true;
 
-        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+        rb.collisionDetectionMode =
+            CollisionDetectionMode2D.Continuous;
     }
 
     private void Start()
     {
-        LancarBola();
-    }
-
-    private void LancarBola()
-    {
-        float directionX = Random.value < 0.5f ? -1f : 1f;
-        float directionY = Random.Range(-0.5f, 0.5f);
-
-        Vector2 direcao = new Vector2(directionX, directionY).normalized;
-
-        rb.linearVelocity = direcao * speed;
-    }
-
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (collision.contactCount == 0)
-            return;
-
-        // =========================
-        // COLISÃO COM RAQUETE
-        // =========================
-
-        if (collision.gameObject.CompareTag("Player"))
+        // Player 2 não controla a física da bola.
+        if (udpClient != null &&
+            udpClient.GetPlayerID() == 2)
         {
-            RicocheteRaquete(collision.transform);
+            rb.linearVelocity = Vector2.zero;
+        }
+    }
+
+    private void OnCollisionEnter2D(
+        Collision2D collision)
+    {
+        // Somente Player 1 calcula
+        // a física oficial da bola.
+        if (udpClient != null &&
+            udpClient.GetPlayerID() != 1)
+        {
             return;
         }
 
-        // =========================
+        if (collision.contactCount == 0)
+            return;
+
+        // =====================================================
+        // COLISÃO COM RAQUETE
+        // =====================================================
+
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            RicocheteRaquete(
+                collision.transform
+            );
+
+            return;
+        }
+
+        // =====================================================
         // COLISÃO COM PAREDE
-        // =========================
+        // =====================================================
 
-        Vector2 normal = collision.GetContact(0).normal;
+        Vector2 normal =
+            collision.GetContact(0).normal;
 
-        Vector2 velocidadeAtual = rb.linearVelocity.normalized;
+        Vector2 velocidadeAtual =
+            rb.linearVelocity.normalized;
 
-        Vector2 novaDirecao = Vector2.Reflect(
-            velocidadeAtual,
-            normal
-        );
+        if (velocidadeAtual == Vector2.zero)
+            return;
+
+        Vector2 novaDirecao =
+            Vector2.Reflect(
+                velocidadeAtual,
+                normal
+            );
 
         // Evita que a bola fique praticamente
         // paralela à parede.
-        if (Mathf.Abs(novaDirecao.y) < minimumVerticalAngle)
+        if (Mathf.Abs(novaDirecao.y) <
+            minimumVerticalAngle)
         {
-            float sinal = novaDirecao.y >= 0f ? 1f : -1f;
+            float sinal =
+                novaDirecao.y >= 0f
+                    ? 1f
+                    : -1f;
 
-            novaDirecao.y = minimumVerticalAngle * sinal;
+            novaDirecao.y =
+                minimumVerticalAngle *
+                sinal;
 
             novaDirecao.Normalize();
         }
 
-        rb.linearVelocity = novaDirecao * speed;
+        rb.linearVelocity =
+            novaDirecao * speed;
     }
 
-    private void RicocheteRaquete(Transform raquete)
+    private void RicocheteRaquete(
+        Transform raquete)
     {
-        Collider2D colliderRaquete = raquete.GetComponent<Collider2D>();
+        Collider2D colliderRaquete =
+            raquete.GetComponent<Collider2D>();
 
         if (colliderRaquete == null)
             return;
 
-        // Posição da bola em relação ao centro da raquete.
-        float diferencaY = transform.position.y - raquete.position.y;
+        // Diferença entre a posição da bola
+        // e o centro da raquete.
+        float diferencaY =
+            transform.position.y -
+            raquete.position.y;
 
         // Metade da altura da raquete.
-        float metadeAltura = colliderRaquete.bounds.extents.y;
+        float metadeAltura =
+            colliderRaquete.bounds.extents.y;
 
         if (metadeAltura <= 0f)
             return;
 
-        // Converte para um valor entre -1 e 1.
-        //
-        // -1 = parte inferior
-        //  0 = centro
-        // +1 = parte superior
+        // Converte para -1 até 1.
+        float percentual =
+            diferencaY /
+            metadeAltura;
 
-        float percentual = diferencaY / metadeAltura;
+        percentual =
+            Mathf.Clamp(
+                percentual,
+                -1f,
+                1f
+            );
 
-        percentual = Mathf.Clamp(percentual, -1f, 1f);
+        // Calcula o ângulo do ricochete.
+        float angulo =
+            percentual *
+            maxBounceAngle;
 
-        // Calcula o ângulo baseado no ponto de impacto.
-        float angulo = percentual * maxBounceAngle;
+        float radianos =
+            angulo *
+            Mathf.Deg2Rad;
 
-        float radianos = angulo * Mathf.Deg2Rad;
-
-        // Descobre para qual lado a bola deve ir.
+        // Descobre para qual lado
+        // a bola deve ir.
         float direcaoX;
 
-        if (transform.position.x < raquete.position.x)
+        if (transform.position.x <
+            raquete.position.x)
         {
-            // Bola está à esquerda da raquete.
             direcaoX = -1f;
         }
         else
         {
-            // Bola está à direita da raquete.
             direcaoX = 1f;
         }
 
-        Vector2 novaDirecao = new Vector2(
-            direcaoX * Mathf.Cos(radianos),
-            Mathf.Sin(radianos)
-        );
+        // Calcula a nova direção.
+        Vector2 novaDirecao =
+            new Vector2(
+                direcaoX *
+                Mathf.Cos(radianos),
+
+                Mathf.Sin(radianos)
+            );
 
         novaDirecao.Normalize();
 
-        rb.linearVelocity = novaDirecao * speed;
+        // Aplica velocidade.
+        rb.linearVelocity =
+            novaDirecao * speed;
     }
 }

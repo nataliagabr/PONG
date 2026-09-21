@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -13,10 +14,10 @@ public class UDPServer : MonoBehaviour
 
     private UdpClient servidor;
 
-    private Dictionary<string, int> jogadores =
+    private readonly Dictionary<string, int> jogadores =
         new Dictionary<string, int>();
 
-    private Dictionary<int, IPEndPoint> enderecosJogadores =
+    private readonly Dictionary<int, IPEndPoint> enderecosJogadores =
         new Dictionary<int, IPEndPoint>();
 
     private int proximoPlayerID = 1;
@@ -25,10 +26,7 @@ public class UDPServer : MonoBehaviour
     {
         if (!executarServidor)
         {
-            Debug.Log(
-                "UDP Server desativado nesta instância."
-            );
-
+            Debug.Log("Servidor UDP desativado nesta instância.");
             return;
         }
 
@@ -47,8 +45,7 @@ public class UDPServer : MonoBehaviour
             );
 
             Debug.Log(
-                "SERVIDOR UDP iniciado na porta " +
-                porta
+                "SERVIDOR UDP iniciado na porta " + porta
             );
         }
         catch (Exception erro)
@@ -60,8 +57,7 @@ public class UDPServer : MonoBehaviour
         }
     }
 
-    private void ReceberMensagem(
-        IAsyncResult resultado)
+    private void ReceberMensagem(IAsyncResult resultado)
     {
         if (servidor == null)
             return;
@@ -80,13 +76,23 @@ public class UDPServer : MonoBehaviour
                     ref endereco
                 );
 
-            string mensagem =
-                Encoding.UTF8.GetString(dados);
+            if (dados != null && dados.Length > 0)
+            {
+                string mensagem =
+                    Encoding.UTF8.GetString(dados);
 
-            ProcessarMensagem(
-                mensagem,
-                endereco
-            );
+                Debug.Log(
+                    "Recebido de " +
+                    endereco +
+                    ": " +
+                    mensagem
+                );
+
+                ProcessarMensagem(
+                    mensagem,
+                    endereco
+                );
+            }
 
             if (servidor != null)
             {
@@ -118,8 +124,26 @@ public class UDPServer : MonoBehaviour
         string identificador =
             endereco.ToString();
 
-        if (!jogadores.ContainsKey(
-            identificador))
+        // -----------------------------------------------------
+        // NOVO CLIENTE
+        // -----------------------------------------------------
+
+        if (mensagem == "HELLO")
+        {
+            if (!jogadores.ContainsKey(identificador))
+            {
+                RegistrarJogador(
+                    identificador,
+                    endereco
+                );
+            }
+
+            return;
+        }
+
+        // Se o cliente ainda não estiver registrado,
+        // registra automaticamente.
+        if (!jogadores.ContainsKey(identificador))
         {
             RegistrarJogador(
                 identificador,
@@ -132,9 +156,9 @@ public class UDPServer : MonoBehaviour
         int playerID =
             jogadores[identificador];
 
-        // =====================================================
+        // -----------------------------------------------------
         // POSIÇÃO DA RAQUETE
-        // =====================================================
+        // -----------------------------------------------------
 
         if (mensagem.StartsWith("POS:"))
         {
@@ -146,13 +170,13 @@ public class UDPServer : MonoBehaviour
             return;
         }
 
-        // =====================================================
+        // -----------------------------------------------------
         // ESTADO DA BOLA
-        // =====================================================
+        // -----------------------------------------------------
 
         if (mensagem.StartsWith("BALL:"))
         {
-            // Player 1 é a autoridade da bola
+            // Somente Player 1 possui autoridade sobre a bola.
             if (playerID == 1)
             {
                 EnviarParaOutroJogador(
@@ -164,13 +188,31 @@ public class UDPServer : MonoBehaviour
             return;
         }
 
-        // =====================================================
+        // -----------------------------------------------------
         // PONTUAÇÃO
-        // =====================================================
+        // -----------------------------------------------------
 
         if (mensagem.StartsWith("SCORE:"))
         {
-            // Player 1 é a autoridade da pontuação
+            // Somente Player 1 possui autoridade sobre
+            // a pontuação.
+            if (playerID == 1)
+            {
+                EnviarParaOutroJogador(
+                    playerID,
+                    mensagem
+                );
+            }
+
+            return;
+        }
+
+        // -----------------------------------------------------
+        // REINICIAR PARTIDA
+        // -----------------------------------------------------
+
+        if (mensagem == "RESTART")
+        {
             if (playerID == 1)
             {
                 EnviarParaOutroJogador(
@@ -225,10 +267,28 @@ public class UDPServer : MonoBehaviour
         );
 
         EnviarMensagem(
-            "ID:" +
-            playerID,
+            "ID:" + playerID,
             endereco
         );
+
+        // Quando o segundo jogador entrar,
+        // avisa os dois clientes que a partida pode começar.
+        if (jogadores.Count == 2)
+        {
+            EnviarMensagem(
+                "READY",
+                enderecosJogadores[1]
+            );
+
+            EnviarMensagem(
+                "READY",
+                enderecosJogadores[2]
+            );
+
+            Debug.Log(
+                "Dois jogadores conectados. Partida pronta!"
+            );
+        }
     }
 
     private void EnviarParaOutroJogador(
@@ -289,6 +349,12 @@ public class UDPServer : MonoBehaviour
                 endereco
             );
         }
+        catch (ObjectDisposedException)
+        {
+        }
+        catch (SocketException)
+        {
+        }
         catch (Exception erro)
         {
             Debug.LogError(
@@ -313,7 +379,6 @@ public class UDPServer : MonoBehaviour
         if (servidor != null)
         {
             servidor.Close();
-
             servidor = null;
 
             Debug.Log(

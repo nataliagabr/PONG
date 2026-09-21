@@ -49,7 +49,8 @@ public class GameManager : MonoBehaviour
     {
         if (ball != null)
         {
-            ballStartPosition = ball.position;
+            ballStartPosition =
+                ball.position;
         }
 
         if (winPanel != null)
@@ -65,6 +66,11 @@ public class GameManager : MonoBehaviour
         if (partidaEncerrada)
             return;
 
+        // Somente Player 1 pode registrar
+        // oficialmente um gol.
+        if (!SouPlayer1())
+            return;
+
         scoreP1++;
 
         AtualizarPlacar();
@@ -73,7 +79,10 @@ public class GameManager : MonoBehaviour
 
         if (scoreP1 >= pontosParaVencer)
         {
-            FinalizarPartida("Jogador 1 venceu!");
+            FinalizarPartida(
+                "Jogador 1 venceu!"
+            );
+
             return;
         }
 
@@ -85,6 +94,11 @@ public class GameManager : MonoBehaviour
         if (partidaEncerrada)
             return;
 
+        // Somente Player 1 pode registrar
+        // oficialmente um gol.
+        if (!SouPlayer1())
+            return;
+
         scoreP2++;
 
         AtualizarPlacar();
@@ -93,23 +107,36 @@ public class GameManager : MonoBehaviour
 
         if (scoreP2 >= pontosParaVencer)
         {
-            FinalizarPartida("Jogador 2 venceu!");
+            FinalizarPartida(
+                "Jogador 2 venceu!"
+            );
+
             return;
         }
 
         ReiniciarBola();
     }
 
+    private bool SouPlayer1()
+    {
+        if (udpClient == null)
+            return false;
+
+        return udpClient.GetPlayerID() == 1;
+    }
+
     private void AtualizarPlacar()
     {
         if (scoreP1Text != null)
         {
-            scoreP1Text.text = scoreP1.ToString();
+            scoreP1Text.text =
+                scoreP1.ToString();
         }
 
         if (scoreP2Text != null)
         {
-            scoreP2Text.text = scoreP2.ToString();
+            scoreP2Text.text =
+                scoreP2.ToString();
         }
     }
 
@@ -135,11 +162,15 @@ public class GameManager : MonoBehaviour
 
         if (scoreP1 >= pontosParaVencer)
         {
-            FinalizarPartida("Jogador 1 venceu!");
+            FinalizarPartida(
+                "Jogador 1 venceu!"
+            );
         }
         else if (scoreP2 >= pontosParaVencer)
         {
-            FinalizarPartida("Jogador 2 venceu!");
+            FinalizarPartida(
+                "Jogador 2 venceu!"
+            );
         }
     }
 
@@ -148,20 +179,44 @@ public class GameManager : MonoBehaviour
         if (ball == null)
             return;
 
-        ball.position = ballStartPosition;
+        ball.position =
+            ballStartPosition;
 
         if (ballRb != null)
         {
-            ballRb.linearVelocity = Vector2.zero;
-            ballRb.angularVelocity = 0f;
+            ballRb.linearVelocity =
+                Vector2.zero;
+
+            ballRb.angularVelocity =
+                0f;
         }
 
-        CancelInvoke(nameof(LiberarBola));
+        CancelInvoke(
+            nameof(LiberarBola)
+        );
 
         Invoke(
             nameof(LiberarBola),
             restartDelay
         );
+    }
+
+    public void ReiniciarBolaRemota()
+    {
+        if (ball == null)
+            return;
+
+        ball.position =
+            ballStartPosition;
+
+        if (ballRb != null)
+        {
+            ballRb.linearVelocity =
+                Vector2.zero;
+
+            ballRb.angularVelocity =
+                0f;
+        }
     }
 
     private void LiberarBola()
@@ -172,11 +227,21 @@ public class GameManager : MonoBehaviour
         if (ballRb == null)
             return;
 
+        // Somente Player 1 controla
+        // fisicamente a bola.
+        if (!SouPlayer1())
+            return;
+
         float direcaoX =
-            Random.value < 0.5f ? -1f : 1f;
+            Random.value < 0.5f
+                ? -1f
+                : 1f;
 
         float direcaoY =
-            Random.Range(-0.5f, 0.5f);
+            Random.Range(
+                -0.5f,
+                0.5f
+            );
 
         Vector2 direcao =
             new Vector2(
@@ -193,14 +258,17 @@ public class GameManager : MonoBehaviour
     {
         partidaEncerrada = true;
 
-        CancelInvoke(nameof(LiberarBola));
+        CancelInvoke(
+            nameof(LiberarBola)
+        );
 
         if (ballRb != null)
         {
             ballRb.linearVelocity =
                 Vector2.zero;
 
-            ballRb.angularVelocity = 0f;
+            ballRb.angularVelocity =
+                0f;
         }
 
         if (winPanel != null)
@@ -210,13 +278,44 @@ public class GameManager : MonoBehaviour
 
         if (winText != null)
         {
-            winText.text = mensagem;
+            winText.text =
+                mensagem;
         }
     }
 
     public void ReiniciarPartida()
     {
-        CancelInvoke(nameof(LiberarBola));
+        // Apenas Player 1 pode iniciar
+        // oficialmente um novo jogo.
+        if (!SouPlayer1())
+            return;
+
+        ReiniciarPartidaLocal();
+
+        if (udpClient != null)
+        {
+            udpClient.EnviarPontuacao(
+                scoreP1,
+                scoreP2
+            );
+
+            udpClient.EnviarReinicio();
+        }
+    }
+
+    public void ReiniciarPartidaRemota()
+    {
+        if (SouPlayer1())
+            return;
+
+        ReiniciarPartidaLocal();
+    }
+
+    private void ReiniciarPartidaLocal()
+    {
+        CancelInvoke(
+            nameof(LiberarBola)
+        );
 
         scoreP1 = 0;
         scoreP2 = 0;
@@ -224,8 +323,6 @@ public class GameManager : MonoBehaviour
         partidaEncerrada = false;
 
         AtualizarPlacar();
-
-        EnviarPontuacao();
 
         if (winPanel != null)
         {
@@ -243,13 +340,18 @@ public class GameManager : MonoBehaviour
             ballRb.linearVelocity =
                 Vector2.zero;
 
-            ballRb.angularVelocity = 0f;
+            ballRb.angularVelocity =
+                0f;
         }
 
-        Invoke(
-            nameof(LiberarBola),
-            restartDelay
-        );
+        // Player 1 é quem lança a bola.
+        if (SouPlayer1())
+        {
+            Invoke(
+                nameof(LiberarBola),
+                restartDelay
+            );
+        }
     }
 
     public int GetScoreP1()
